@@ -1,0 +1,964 @@
+Android组件系列----Activity组件详解
+【声明】
+文章来源：http://www.cnblogs.com/smyhvae/p/3924567.html
+
+ 
+
+【正文】
+
+注：四大组件指的是应用组件：Activity、Service、BroadcastReceiver、ContentProvider；之前的控件指的是UI组件。
+
+博文目录：
+
+一、Activity简介
+二、Activity的状态和生命周期
+三、Activity的基本用法
+四、向下一个Activity传递数据
+五、返回数据给上一个Activity
+六、Activity运行时屏幕方向与显示方式
+七、Activity的现场保存
+八、Activity通过SharedPreferences保存数据
+一、Activity简介：
+
+Activity组件是四大组件之一，在应用中一个Activity可以用来表示一个界面， 中文意思也可以理解为“活动” ，即一个活动开始，代表Activity组件启动；活动结束，代表一个Activity的生命周期结束。
+
+一个android应用必须通过Activity来运行和启动，和J2ME 的MIDlet 一样，在android中，Activity的生命周期统一交给系统管理。与MIDlet 不同的是安装在android 中的所有的Activity 都是平等的。
+
+理解以下四个基本概念，将有助于我们更好的了解Activity：
+
+• Application（APP）
+
+• Activity
+
+• Activity栈
+
+• Task
+
+每个Application均占有独立的内存空间。需要注意的是：Application之间虽然相互独立，但APP_1中的Activity与APP_2中的Activity之间可以进行通信（调用、访问等）。
+
+二、Activity的状态和生命周期
+
+1、Activity的状态：
+
+（1）Resumed：Activity对象出于运行状态。一个新Activity 启动入栈后，它在屏幕最前端，处于栈的最顶端，此时它处于可见并可以与用户交互的激活状态。
+
+（2）Paused：另一个Activity位于前端，但是本Activity还可见。
+
+        Paused状态常用于：当Activity被另一个透明或者Dialog样式的Activity覆盖时的状态。此时它依然与窗口管理器保持连接，系统继续维护其内部状态，所以它仍然可见，但它已经失去了焦点故不可与用户交互。注：一个Activity出于paused状态时，系统并不会释放资源。释放资源你的操作要靠开发者来完成。
+
+（3）Stopped：另一个Activity位于前端，完全遮挡本Activity。
+
+（4）killed：Activity被系统杀死回收或者没有被启动时。
+
+ 绘制表格如下：
+
+生命周期函数
+
+调用时机
+
+举例
+
+onCreate
+
+在Activity对象被第一次创建时调用
+
+买车
+
+onStart
+
+当Activity变得可见时调用
+
+打火，启动
+
+onResume
+
+当Activity开始准备和用户交互时调用
+
+踩油门，驱动汽车前进
+
+onPause
+
+当系统即将启动另外一个Activity之前调用
+
+松开油门
+
+onStop
+
+当前Activity变得不可见时调用
+
+熄火
+
+onDestroy
+
+当前Activity被销毁之前调用
+
+车辆报废
+
+onRestart
+
+当一个Activity再次启动之前调用
+
+ 
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+注：on开头的一般是事件的方法。（引申知识：观察者的设计模式）
+
+
+2、Activity的生命周期：
+
+
+
+详情请见本人的另外一篇博客：Activity的生命周期
+
+ 
+
+生命周期的完整代码如下：
+
+复制代码
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+
+public class MainActivity extends Activity {
+
+    private static final String TAG = "smyhvae";
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        Log.d(TAG, "onCreate");
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.d(TAG, "onStart");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume");
+    }
+
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.d(TAG, "onPause");
+    }
+
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.d(TAG, "onStop");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "onDestroy");
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        Log.d(TAG, "onRestart");
+    }
+}
+复制代码
+ 
+
+ 
+
+三、Activity的启动模式：（面试注意）
+
+ 
+
+Activity有四种启动模式：standard、singleTop、singleTask、singleInstance。可以在AndroidManifest.xml中activity标签的属性android:launchMode中设置该activity的加载模式。
+
+ 
+
+standard模式：默认的模式，以这种模式加载时，每当启动一个新的活动，必定会构造一个新的Activity实例放到返回栈（目标task）的栈顶，不管这个Activity是否已经存在于返回栈中；
+singleTop模式：如果一个以singleTop模式启动的activity的实例已经存在于返回桟的桟顶，那么再启动这个Activity时，不会创建新的实例，而是重用位于栈顶的那个实例，并且会调用该实例的onNewIntent()方法将Intent对象传递到这个实例中；
+ 
+
+注：如果以singleTop模式启动的activity的一个实例已经存在于返回桟中，但是不在桟顶，那么它的行为和standard模式相同，也会创建多个实例；
+
+ 
+
+singleTask模式：这种模式下，每次启动一个activity时，系统首先会在返回栈中检查是否存在该活动的实例，如果存在，则直接使用该实例（会调用实例的onNewIntent()方法），并把这个活动之上的所有活动统统清除；如果没有发现就会创建一个新的活动实例；
+ 
+
+singleInstance模式：总是在新的任务中开启，并且这个新的任务中有且只有这一个实例，并让多个应用共享该栈中的该Activity实例。一旦该模式的Activity的实例存在于某个栈中，任何应用再激活该Activity时都会重用该栈中的实例。其效果相当于多个应用程序共享一个应用，不管谁激活该Activity都会进入同一个应用中。
+注：也就是说被该实例启动的其他activity会自动运行于另一个任务中。当再次启动该activity的实例时，会重新调用已存在的任务和实例。并且会调用这个实例的onNewIntent()方法，将Intent实例传递到该实例中。和singleTask相同，同一时刻在系统中只会存在一个这样的Activity实例。(singleInstance即单实例)
+
+ 
+
+注：前面三种模式中，每个应用程序都有自己的返回栈，同一个活动在不同的返回栈中入栈时，必然是创建了新的实例。而使用singleInstance模式可以解决这个问题，在这种模式下会有一个单独的返回栈来管理这个活动，不管是哪一个应用程序来访问这个活动，都公用同一个返回栈，也就解决了共享活动实例的问题。（此时可以实现任务之间的切换，而不是单独某个栈中的实例切换）
+
+ 
+
+1、singleInstance模式详解：
+
+singleInstance模式从字面上看比较难理解，下面通过代码举例来分析。代码如下：
+
+（1）新建三个Activity：FirstActivity、SecondActivity、ThirdActivity。同时，将SecondActivity的启动模式设置为singleInstance。
+
+（2）三个Activity的代码如下：
+
+FirstActivity.java:
+
+复制代码
+ 1 import android.app.Activity;
+ 2 import android.content.Intent;
+ 3 import android.os.Bundle;
+ 4 import android.util.Log;
+ 5 import android.view.View;
+ 6 import android.widget.Button;
+ 7 
+ 8 
+ 9 public class FirstActivity extends Activity {
+10 
+11     private Button button1;
+12 
+13     @Override
+14     protected void onCreate(Bundle savedInstanceState) {
+15         super.onCreate(savedInstanceState);
+16         Log.d("--->FirstActivity", "返回栈的id是" + getTaskId());  //打印当前返回栈的id
+17         setContentView(R.layout.activity_main);
+18         button1 = (Button) findViewById(R.id.button1);
+19         button1.setOnClickListener(new View.OnClickListener() {
+20             @Override
+21             public void onClick(View v) {
+22                 startActivity(new Intent(FirstActivity.this, SecondActivity.class));
+23 
+24             }
+25         });
+26     }
+27 
+28 }
+复制代码
+上方代码中，在onCreate()方法中打印当前返回栈的id。点击按钮，跳转到SecondActivity。
+
+ 
+
+SecondActivity.java:
+
+复制代码
+ 1 import android.app.Activity;
+ 2 import android.content.Intent;
+ 3 import android.os.Bundle;
+ 4 import android.util.Log;
+ 5 import android.view.View;
+ 6 import android.widget.Button;
+ 7 
+ 8 
+ 9 public class SecondActivity extends Activity {
+10 
+11     private Button button2;
+12 
+13     @Override
+14     protected void onCreate(Bundle savedInstanceState) {
+15         super.onCreate(savedInstanceState);
+16         Log.d("--->SecondActivity", "返回栈的id是" + getTaskId());  //打印当前返回栈的id
+17         setContentView(R.layout.activity_second);
+18         button2 = (Button) findViewById(R.id.button2);
+19         button2.setOnClickListener(new View.OnClickListener() {
+20             @Override
+21             public void onClick(View v) {
+22                 startActivity(new Intent(SecondActivity.this, ThirdActivity.class));
+23 
+24             }
+25         });
+26     }
+27 
+28 }
+复制代码
+ 
+
+上方代码中，在onCreate()方法中打印当前返回栈的id。点击按钮，跳转到ThirdActivity。
+
+ThirdActivity.java:
+
+复制代码
+ 1 import android.app.Activity;
+ 2 import android.os.Bundle;
+ 3 import android.util.Log;
+ 4 import android.widget.Button;
+ 5 
+ 6 
+ 7 public class ThirdActivity extends Activity {
+ 8 
+ 9     private Button button3;
+10 
+11     @Override
+12     protected void onCreate(Bundle savedInstanceState) {
+13         super.onCreate(savedInstanceState);
+14         Log.d("--->ThirdActivity", "返回栈的id是" + getTaskId());  //打印当前返回栈的id
+15         setContentView(R.layout.activity_third);
+16     }
+17 
+18 }
+复制代码
+ 
+
+运行程序，在FirstActivity中点击按钮进入SecondActivity中，然后在SecondActivity中点击按钮进入ThirdActivity。后台打印日志如下：
+
+
+
+上方日志可以看到：SecondActivity的Task id不同于FirstActivity和ThirdActivity，这说明SecondActivity确实是存放在一个单独的返回栈中的，而且这个返回栈中只有SecondActivity这一个活动。
+
+然后，我们按下Back键进行返回，你会发现ThirdActivity竟然直接返回到了FirstActivity，再按下Back键又会返回到SecondActivity，再按下Back键才会退出程序。解释如下：
+
+FirstActivity和ThirdActivity存放在同一个返回栈里，当在ThirdActivity中按下Back键，ThirdActivity出栈，那么FirstActivity就成为了栈顶活动显示在界面上；然后在FirstActivity界面再次按下Back键，这是当前的返回栈已经空了，于是就显示了另一个返回栈的栈顶活动，即SecondActivity。最后按下Back键，这时，所有的返回栈都已经空了，自然也就退出了程序。 
+
+ 
+
+三、Activity的基本用法：
+
+1、隐藏标题栏：
+
+requestWindowFeature(Window.FEATURE_NO_TITLE);
+setContentView(R.layout.activity_main);  
+注：第一行代码一定要在第二行代码之前执行。
+
+2、在活动当中使用Toast：
+
+例如点击按钮时，弹出吐司：
+
+1          button.setOnClickListener(new OnClickListener() {            
+2              @Override
+3              public void onClick(View v) {
+4                  Toast.makeText(MainActivity.this, "You clicked the Button",Toast.LENGTH_SHORT).show();                
+5              }                
+6          });
+3、启动一个Activity的方法：即在默认启动的Activity中启动另一个Activity
+
+核心代码如下：
+
+Intent intent = new Intent();
+intent.setClass(MainActivity.this, SecondActivity.class); 
+具体过程请参考本人的另一篇博客： 当前Activity跳转到另一个Activity的详细过程
+
+ 
+
+4、隐式Intent的用法：
+使用隐式Intent，我们不仅可以启动自己程序内的活动，还可以启动其他程序的活动，这使得Android多个应用程序之间的功能共享成为了可能。比如应用程序中需要展示一个网页，没有必要自己去实现一个浏览器（事实上也不太可能），而是只需要条用系统的浏览器来打开这个网页就行了。
+
+【实例】：打开指定网页。
+
+监听器部分的核心代码如下：
+
+复制代码
+1         button.setOnClickListener(new OnClickListener() {            
+2             @Override
+3             public void onClick(View v) {
+4                 Intent intent = new Intent(Intent.ACTION_VIEW);
+5                 intent.setData(Uri.parse("http://www.baidu.com"));
+6                 startActivity(intent);
+7             }
+8         }); 
+复制代码
+第4行代码：指定了Intent的action是 Intent.ACTION_VIEW，这是一个Android系统内置的动作；
+
+第5行代码：通过Uri.parse()方法，将一个网址字符串解析成一个Uri对象，再调用intent的setData()方法将这个Uri对象传递进去。
+
+详见：《android第一行代码》P48页。
+
+如果要打电话的话，可以使用下面的代码：
+
+                Intent intent = new Intent(Intent.ACTION_DIAL);
+                intent.setData(Uri.parse("tel:10086"));
+                startActivity(intent);
+  
+
+四、向下一个Activity传递数据：
+
+不同的Activity 实例可能运行在一个进程中，也可能运行在不同的进程中。因此，我们需要一种特别的机制帮助我们在Activity 之间传递消息。Android 中通过Intent 对象来表示一条消息，一个Intent 对象不仅包含有这个消息的目的地，还可以包含消息的内容，这好比一封Email，其中不仅应该包含收件地址，还可以包含具体的内容。对于一个Intent 对象，消息“目的地 ”是必须的，而内容则是可选项。
+
+在上面的实例中通过Activity. startActivity(intent)启动另外一个Activity的时候，我们在Intent类的构造器中指定了“收件人地址”。
+
+Activity传递数据有以下两种方式：
+
+1、【方式一】使用Intent自带的bundle对象
+
+传递数据，代码如下：
+
+这里，我们采用另一种绑定监听时间的方法，即在布局文件中，对Button按钮做如下设置：
+
+ 
+
+复制代码
+1     <Button
+2         android:id="@+id/button1"
+3         android:layout_width="wrap_content"
+4         android:layout_height="wrap_content"
+5         android:layout_below="@+id/textView1"
+6         android:layout_marginTop="22dp"
+7         android:onClick="gotoSecondActivity"
+8         android:text="启动第二个Activity" /> 
+复制代码
+上方第7行代码就是我们绑定的监听事件，点击按钮，将触发gotoSecondActivity()函数中的代码。紧接着做下面的操作。
+
+在MainActivity中发送数据：
+
+复制代码
+1     public void gotoSecondActivity(View view){
+2         //创建一个意图
+3         Intent intent = new Intent(MainActivity.this,SecondActivity.class);
+4         
+5         //第一种方式：使用Intent自带的bundle对象
+6         intent.putExtra("name", "smyhvae");//方法：public Intent putExtra (String name, boolean value)         
+7         startActivity(intent);
+8     }
+复制代码
+ 
+
+在SecondActivity中接收数据：
+
+复制代码
+ 1     protected void onCreate(Bundle savedInstanceState) {
+ 2         // TODO Auto-generated method stub
+ 3         super.onCreate(savedInstanceState);
+ 4         setContentView(R.layout.second);
+ 5         
+ 6         Intent intent = getIntent();
+ 7         String name = intent.getStringExtra("name");      　　  
+ 8 
+ 9         
+10         TextView textView = (TextView)findViewById(R.id.textView1);
+11         textView.setText("name="+name);       
+1112     } 
+复制代码
+ 
+
+或者传递一个对象：
+
+新建一个Student.java的类文件，作为传递的对象：
+
+复制代码
+ 1 import java.io.Serializable;
+ 2 //让这个类序列化
+ 3 public class Student implements Serializable{
+ 4     int grade ;
+ 5     String school;
+ 6     String address;
+ 7     
+ 8     //将这些变量 变成字符串，方便输出
+ 9     @Override
+10     public String toString() {
+11         return "Student [grade=" + grade + ", school=" + school + ", address="
+12                 + address + "]";
+13     }
+14     
+15 }
+复制代码
+ 
+
+在MainActivity中发送数据：
+
+复制代码
+ 1     public void gotoSecondActivity(View view){
+ 2         //创建一个意图
+ 3         Intent intent = new Intent(MainActivity.this,SecondActivity.class);
+ 4         
+ 5         //传递自定义类型（对象）
+ 6         Student student = new Student();
+ 7         student.grade = 2;
+ 8         student.school = "UESTC";
+ 9         student.address = "chengdu";
+10         intent.putExtra("student", student);//方法：public Intent putExtra (String name, Serializable value) 
+11         
+12         startActivity(intent);
+13     }
+复制代码
+ 
+
+在SecondActivity中接收数据：
+
+复制代码
+ 1     protected void onCreate(Bundle savedInstanceState) {
+ 2         // TODO Auto-generated method stub
+ 3         super.onCreate(savedInstanceState);
+ 4         setContentView(R.layout.second);               
+ 5 
+ 6 
+ 7       Intent intent = getIntent();
+ 8        Student student = (Student) intent.getSerializableExtra("student");
+ 9         
+10         TextView textView = (TextView)findViewById(R.id.textView1);
+11         textView.setText(student);         
+12         
+13         System.out.println("SecondActivity-onCreate");
+14     } 
+复制代码
+​【工程文件】
+
+链接：http://pan.baidu.com/s/1jGvEc6q
+
+密码：ic6c
+
+ 
+
+2、【方式二】创建Bundle对象来传递
+
+通过按钮监听事件。核心代码如下：
+
+在MainActivity中发送数据：
+
+复制代码
+ 1     //通过这个方法跳转到SecondActivity界面     
+ 2     public void gotoSecondActivity(View view){
+ 3         //创建一个意图
+ 4         Intent intent = new Intent(MainActivity.this,SecondActivity.class);
+ 5         
+ 6         //第二种传值方式：创建Bundle对象来传递
+ 7         Bundle bundle = new Bundle();  //创建bundle的内容
+ 8         bundle.putString("name", "smyhvae");//编写bundle的内容
+ 9         bundle.putInt("age", 22);
+10         bundle.putLong("id", 20132224);
+11         
+12         intent.putExtra("person", bundle);//封装bundle。方法：public Intent putExtra (String name, Bundle value)     
+13 
+14         startActivity(intent);
+15     }
+复制代码
+ 
+
+在SecondActivity中接收数据：
+
+复制代码
+ 1     protected void onCreate(Bundle savedInstanceState) {
+ 2         // TODO Auto-generated method stub
+ 3         super.onCreate(savedInstanceState);
+ 4         setContentView(R.layout.second);
+ 5         
+ 6         //获取上一个Activity传递过来的参数
+ 7         Intent intent = getIntent();
+ 8         Bundle bundle = intent.getBundleExtra("person");
+ 9         String name = bundle.getString("name");
+10         int age = bundle.getInt("age");
+11         
+12         //获取上一个Activity传递过来的参数，将接收到的数据输出到TextView当中
+13         TextView textView = (TextView)findViewById(R.id.textView1);
+14         textView.setText("name="+name+";"+"age="+age);         
+15         
+16         System.out.println("SecondActivity-onCreate");
+17     }
+复制代码
+ 
+
+【工程文件】
+
+链接：http://pan.baidu.com/s/1ntLqzfN
+
+密码：xzn7
+
+ 
+
+五、返回数据给上一个Activity:
+
+步骤如下：
+
+启动带返回结果的MainActivity：
+        startActivityForResult(Intent intent, int requestCode)
+
+        第二个参数为请求码，用于在之后的回调中判断数据的来源
+
+Intent intent = new Intent(MainActivity.this, SecondActivity.class);
+startActivityForResult(intent,1);
+ 
+
+在SecondActivity中通过putExtra放入数据，然后调用以下方法：（非常重要）
+        setResult(int resultCode, Intent data)
+
+         resultCode一般只使用RESULT_OK 或RESULT_CANCELED这两个值，第二个参数则把带有数据的Intent传递回去
+
+Intent intent = new Intent();
+intent.putExtra("data_return", "smyhvae");
+setResult(RESULT_OK, intent);
+finish();
+ 
+
+SecondActicity被销毁之前，会调用上MainActivity的 onActivityResult()方法，所以要重写这个方法：
+public void onActivityResult(int requestCode, int resultCode,Intent data)
+
+复制代码
+ 1     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+ 2         switch (requestCode) {
+ 3         case 1:
+ 4             if (resultCode == RESULT_OK) {
+ 5                 String returnedData = data.getStringExtra("data_return");
+ 6                 Log.d("FirstActivity", returnedData);
+ 7             }
+ 8             break;
+ 9         default:
+10         }
+11     } 
+复制代码
+举例略。
+
+ 
+
+六、Activity运行时屏幕方向与显示方式
+
+1、锁定屏幕方向：横屏/ 竖屏
+
+Android 内置了方向感应器的支持。Android 会根据所处的方向自动在竖屏和横屏间切换。但是有时我们的应用程序仅能在横屏/ 竖屏时运行，比如某些游戏，此时我们需要锁定该Activity 运行时的屏幕方向，<activity>节点的android:screenOrientation属性可以完成该项任务，示例代码如下：
+
+【方法一】在清单文件中配置：
+
+<activity android:name=".EX01"
+    android:label="@string/app_name"
+    android:screenOrientation="portrait"> 
+    // 值为portrait时强制为竖屏, 值为landscape时强制为横屏
+</activity>
+ 
+
+【方法二】通过代码实现（一般放在onCreate方法中的前面），如下：
+
+setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATTION_LANDSCAPE); 
+setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATTION_PORTRAIT); 
+这里提一个小知识，Android模拟器中，快捷键"Ctrl+F11/F12"可以实现转屏
+
+ 
+
+2、全屏显示：
+
+可以在其onCreate()方法中添加如下代码实现：
+
+        //设置全屏模式
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        //去除标题栏
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+ 
+
+3、以对话框形式显示Activity：
+
+在清单文件中配置：
+
+        <activity 
+            android:name="com.example.smyh004activity02.SecondActivity"
+            android:label="SecondActivity"
+            android:theme="@android:style/Theme.DeviceDefault.Dialog">            
+        </activity> 
+特别关注：Activity的启动模式。见《Android第一行代码》P68页
+
+ 
+
+七、Activity的现场保存：
+
+程序在运行时，一些设备的配置可能会改变，如：横竖屏的切换、键盘的可用性等。这种事情一旦发生，Activity会重新创建。
+
+重新创建的过程如下：
+
+在销毁之前，会调用onSaveInstanceState()去保存应用中的一些数据，保存在系统当中；
+然后调用onDestroy()销毁之前的Activity；
+最后调用 onCreate()或onRestoreInstanceState()方法去重新创建一个Activity。
+现场保存的步骤如下：
+
+（1）在MainActivity中，调用onSaveInstanceState()，即添加如下代码就可以将临时数据保存：
+
+复制代码
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        String tempData = "Something you want to save";
+        outState.putString("data_key", tempData);
+        Log.i(LOG, "onSaveInstanceState..");
+    }
+复制代码
+ 
+
+（2）数据保存之后，修改MainActivity的onCreate()方法：
+
+复制代码
+ 1     @Override
+ 2     protected void onCreate(Bundle savedInstanceState) {
+ 3         super.onCreate(savedInstanceState);
+ 4         setContentView(R.layout.activity_main);
+ 5         Log.i(LOG, "onCreate...");
+ 6         //步骤2：还原当前activity的状态
+ 7         if (savedInstanceState != null) {
+ 8             String tempData = savedInstanceState.getString("data_key");
+ 9             Log.i(LOG, tempData);
+10         }
+11     }
+复制代码
+ 
+
+完整代码如下：
+
+复制代码
+ 1 package com.example.smyh004activity03;
+ 2 import android.os.Bundle;
+ 3 import android.app.Activity;
+ 4 import android.content.res.Configuration;
+ 5 import android.util.Log;
+ 6 import android.view.Menu;
+ 7 public class MainActivity extends Activity {
+ 8     private static final String LOG = "Activity";
+ 9     @Override
+10     protected void onCreate(Bundle savedInstanceState) {
+11         super.onCreate(savedInstanceState);
+12         setContentView(R.layout.activity_main);
+13         Log.i(LOG, "onCreate...");
+14         //步骤2：还原当前activity的状态
+15         if (savedInstanceState != null) {
+16             String tempData = savedInstanceState.getString("data_key");
+17             Log.i(LOG, tempData);
+18         }
+19     }
+20     // 步骤1：活动被销毁之前（如在横竖屏切换时），会触发该方法来保存activity数据
+21     @Override
+22     protected void onSaveInstanceState(Bundle outState) {
+23         super.onSaveInstanceState(outState);
+24         String tempData = "open";
+25         outState.putString("data_key", tempData);
+26         Log.i(LOG, "onSaveInstanceState..");
+27     }
+28 
+29 }
+复制代码
+ 当手动旋转屏幕后，后台输出结果如下：
+
+
+
+上图的日志中，如果把生命周期写完整一点，打印的日志如下：
+
+
+
+ 
+
+在旋转屏幕时，如果不想重新创建Activity，我们可以通过清单文件AndroidManifest.xml中android:configChanges来指定的某些属性不发生变化，然后通知程序去调用onConfiguratonChanged()方法主动去改变一些设置（当旋转屏幕的时候）。
+
+清单文件中，指定的常见属性有：
+
+"keyboard" 键盘发生了改变----例如用户用了外部的键盘 
+"keyboardHidden" 键盘的可用性发生了改变
+"orientation" 屏幕方向改变
+  "screenSize" 屏幕大小改变
+设置代码举例如下：
+
+        <activity
+            android:name="com.example.smyh004activity03.MainActivity"
+            android:label="@string/app_name"
+            android:configChanges="orientation|screenSize" >
+        </activity> 
+注：符号“|”表示“并且”的意思，这行代码在实际应用中很常见。
+
+接着在上面的java代码的基础之上，添加如下代码：
+
+1     @Override
+2     public void onConfigurationChanged(Configuration newConfig) {
+3         super.onConfigurationChanged(newConfig);
+4         Log.i(LOG, "onConfigurationChanged..");
+5     }
+ 
+
+最终，当手动旋转屏幕后，后台输出结果如下：
+
+  
+
+可以看到，onSaveInstanceState()方法并没有被调用，也就是说，旋转屏幕时，当前Activity并没有被销毁。
+
+ 
+
+八、Activity通过Shared Preferences保存数据：
+
+通常情况下会发生这样的问题，我们在编辑短信的同时有电话打进来，那么接电话肯定是要启动另一个Activiy，那么当前编辑短信的Activity所编辑的信息我们想暂时保存下来，等接完电话后回到该Activity时，可以继续编辑短信。该功能需要如何去实现呢？
+
+其实，SharedPreferences使用xml格式为Android应用提供一种永久的数据存贮方式。对于一个Android应用，它存贮在文件系统的/data/ data/your_app_package_name/shared_prefs/目录下，可以被处在同一个应用中的所有Activity 访问。Android 提提供了相关的API来处理这些数据而不需要程序员直接操作这些文件或者考虑数据同步的问题。
+
+现在就用代码来实现这个功能：
+
+首先使用SharedPreferences这个工具类： 
+
+复制代码
+ 1     private EditText etMsg ;
+ 2     private Button sendButton;
+ 3     private SharedPreferences sp;
+ 4     
+ 5     @Override
+ 6     protected void onCreate(Bundle savedInstanceState) {
+ 7         super.onCreate(savedInstanceState);
+ 8         setContentView(R.layout.activity_main);
+ 9         
+10         etMsg = (EditText)findViewById(R.id.editText1);
+11         sendButton = (Button)findViewById(R.id.button1);
+12         
+13         // 获取共享属性操作的工具（文件名，操作模式）
+14         sp = This.getSharedPreferences("data", 0);
+15     } 
+复制代码
+上方第14行代码中，调用的方法是：public SharedPreferences getSharedPreferences (String name, int mode)
+
+其中，第一个参数代表XML文件，如果有这个文件，就会操作这个文件，如果没有这个文件，就会创建这个文件；第二个参数代表一种操作模式，0代表私有。
+
+然后，我们要在onPause()方法里保存数据，之所以在onPause()方法里保存，是因为在所有可能会被内存销毁的生命周期函数中，而onPause()方法最先执行。代码如下： 
+
+复制代码
+1     //在onPause()方法中保存数据
+2     @Override
+3     protected void onPause() {
+4         super.onPause();
+5         String msg = etMsg.getText().toString();
+6         Editor editor = sp.edit();
+7         editor.putString("msg", msg); //执行方法：public abstract SharedPreferences.Editor putString (String key, String value) 
+8         editor.commit();        
+9     } 
+复制代码
+将数据保存在msg变量中，然后拿到Editor这个编辑器，给它put进去。当然，这些只是在内存中操作，如果要反映到文件当中，还要执行 commit()方法。
+
+紧接着，我们要在onResume()方法中重新还原数据：（为什么要在这个方法中还原数据，不用我多解释） 
+
+1     @Override
+2     protected void onResume() {
+3         super.onResume();
+4         etMsg.setText(sp.getString("msg", ""));        
+5     }
+当程序中第一次启动的时候，并没有保存数据，所以返回一个默认的空值。将这个返回的数据放到etMsg控件中就行了。
+
+现在我们运行程序，是可以执行的。
+
+例如，现在编辑内容，然后去别的程序，再回来的时候（就算我们把程序退出了），编辑的内容还依然存在。这个时候，我们打开文件浏览器，发现数据是保存在data-data-android工程的文件夹-shared-prefs目录的data.xml文件当中的，而且是永久保存；所以，当在onResume()方法还原数据之后，我们还要加一部分代码，来删掉这个文件里的内容（无法删除文件本身），不然就会永久保存本地成为垃圾了。代码如下： 
+
+复制代码
+1     protected void onResume() {
+2         super.onResume();
+3         etMsg.setText(sp.getString("msg", ""));    
+4         Editor editor = sp.edit();
+5         editor.clear();
+6         editor.commit();
+7     } 
+复制代码
+ 
+
+总结之后，最终的完整版代码如下：
+
+activity_main.xml文件代码： 
+
+复制代码
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context=".MainActivity" >
+    <EditText
+        android:id="@+id/editText1"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:gravity="top"
+        android:layout_weight="1"
+        android:ems="10" />
+    <Button
+        android:id="@+id/button1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Button" />
+</LinearLayout> 
+复制代码
+ 
+
+MainActivity.java的代码如下： 
+
+复制代码
+ 1 package com.example.smyh001;
+ 2 import android.app.Activity;
+ 3 import android.content.SharedPreferences;
+ 4 import android.content.SharedPreferences.Editor;
+ 5 import android.os.Bundle;
+ 6 import android.view.Menu;
+ 7 import android.widget.Button;
+ 8 import android.widget.EditText;
+ 9 public class MainActivity extends Activity {
+10     private EditText etMsg ;
+11     private Button sendButton;
+12     private SharedPreferences sp;
+13     
+14     @Override
+15     protected void onCreate(Bundle savedInstanceState) {
+16         super.onCreate(savedInstanceState);
+17         setContentView(R.layout.activity_main);
+18         
+19         etMsg = (EditText)findViewById(R.id.editText1);
+20         sendButton = (Button)findViewById(R.id.button1);
+21         
+22         // 获取共享属性操作的工具
+23         sp = getSharedPreferences("data", 0);
+24     }
+25     //在onPause()方法中保存数据
+26     @Override
+27     protected void onPause() {
+28         super.onPause();
+29         String msg = etMsg.getText().toString();
+30         Editor editor = sp.edit();
+31         editor.putString("msg", msg);//执行方法：public abstract SharedPreferences.Editor putString (String key, String value) 
+32         editor.commit();        
+33     }
+34     
+35     //在onResume()方法中还原数据
+36     @Override
+37     protected void onResume() {
+38         super.onResume();
+39         etMsg.setText(sp.getString("msg", ""));    
+40         Editor editor = sp.edit();
+41         editor.clear();
+42         editor.commit();
+43     }    
+44 } 
+复制代码
+ 运行程序之后，我们在编辑框输入一些文字：
+
+
+
+退出程序，然后导出data.xml文件，打开后显示如下：
+
+
+
+说明输入的文本被保存在了data.xml文件当中。当我们再回到程序，之前输入的文字会被保留在界面上，而data.xml文件中的文本则会被清空。
+
+ 
+
+ 代码优化：
+
+上方代码中如果我们在第40行代码的后面加下面这一行代码：
+
+        etMsg.setSelection((sp.getString("msg", "")).length());
+当返回到原程序时，setSelection方法可将输入光标移动到文本的末尾位置以便继续输入。里面的参数sp.getString("msg", "")是之前所输入的字符串。
+
+ 
+
+到这里为止，Android的基础知识就讲完了，以后会不断完善补充的。
