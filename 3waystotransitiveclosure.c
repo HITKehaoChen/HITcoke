@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include<time.h>
-#define N 350
+#define N 1000
 #define TRUE 0
 int Arr[N][N] = {{0}};
 int b[N][N] = {{0}};
@@ -120,15 +120,16 @@ int intitialWay(int a[N][N])
 int main(void)
 {
         int i;
-        for (i = 0; i <= 10; i++)
+        for (i = 0; i <= 20; i++)
         {
+
                 clock_t start, finish;
                 double duration;
                 FILE *stream;
-                stream = fopen("d://test1.txt", "a+" );
+                stream = fopen("d://test100.txt", "a+" );
                 generate_random_matrix();
                 start = clock();
-                intitialWay(Arr);
+                warshallb(Arr);
                 output_matrix(Arr);
                 finish = clock();
                 duration = (double)(finish - start) / CLOCKS_PER_SEC;
