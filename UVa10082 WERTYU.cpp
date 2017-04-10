@@ -1,7 +1,7 @@
 // UVa10082 WERTYU
 // littlecoke
 #include<stdio.h>
-char s[] = "`1234567890-=QWERTYUIOP[]\\ASDFGHJKL;'ZXCVBNM,./";
+char s[] = "`1234567890-=QWERTYUIOP[]\\ASDFGHJKL;'ZXCVBNM,./";//这是给数组s赋值 注意双引号啊！
 int main() {
   int i, c;
   while((c = getchar()) != EOF) {
