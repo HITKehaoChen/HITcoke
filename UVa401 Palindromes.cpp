@@ -3,11 +3,10 @@
 #include<ctype.h>
 const char* rev = "A   3  HIL JM O   2TUVWXY51SE Z  8 ";
 const char* msg[] = {"not a palindrome", "a regular palindrome", "a mirrored string", "a mirrored palindrome"};
-
 char r(char ch) {
   if(isalpha(ch)) return rev[ch - 'A'];
   return rev[ch - '0' + 25];
-}
+}//镜像串的判断
 
 int main() {
   char s[30];
