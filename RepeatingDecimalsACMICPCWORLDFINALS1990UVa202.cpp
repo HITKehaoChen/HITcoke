@@ -34,7 +34,4 @@ int main()
 		if (!n) printf("(0");
 		if (count > 50) printf("...");
 		printf(")\n");
-		printf("   %d = number of digits in repeating cycle\n\n",!n?1:count-u[n]);
-	}
-	return 0;
-}
+		printf("   %d = number of digits in repeating cycle\n\n",!n?1:coun
