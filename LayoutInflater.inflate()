@@ -1,0 +1,83 @@
+LayoutInflater的inflate方法一共有四种，但我们日常用经常用到的就只有这两种:
+public View inflate(int resource, ViewGroup root) {  
+    return inflate(resource, root, root != null);  
+}  
+或者
+public View inflate(int resource, ViewGroup root, boolean attachToRoot) {  
+    if (DEBUG) System.out.println("INFLATING from resource: " + resource);  
+    XmlResourceParser parser = getContext().getResources().getLayout(resource);  
+    try {  
+        return inflate(parser, root, attachToRoot);  
+    } finally {  
+        parser.close();  
+    }  
+}  
+public View inflate(XmlPullParser parser, ViewGroup root, boolean attachToRoot)
+直接调用以上方法即可，那么如何理解这个方法以及其中的参数呢？
+我们不去看这个方法的源码，为了能够速成所以我们先学习如何使用这个方法：
+
+我们先写两个布局文件，第一个是main.xml，代码如下:
+<?xml version="1.0" encoding="utf-8"?>  
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"  
+    android:layout_width="match_parent"  
+    android:layout_height="match_parent"  
+    android:orientation="vertical" >  
+    <TextView  
+        android:layout_width="match_parent"  
+        android:layout_height="50dp"  
+        android:gravity="center"  
+        android:text="hello world" />    
+</LinearLayout>  
+第二个为test.xml,代码如下：
+<?xml version="1.0" encoding="utf-8"?>  
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" 
+    android:layout_width="match_parent"  
+    android:layout_height="200dp"  
+    android:background="#ffffff00"  
+    android:orientation="vertical" >  
+    <TextView  
+        android:layout_width="match_parent"  
+        android:layout_height="50dp"  
+        android:gravity="center"  
+        android:text="test" />    
+</LinearLayout>  
+在test中设置了其高度为200dp，并且设置了背景颜色。 
+
+接下来看一下LayoutInflater().inflate方法实现：
+第一种方式：inflate(view, null)
+@Override  
+protected void onCreate(Bundle savedInstanceState) {  
+    super.onCreate(savedInstanceState);  
+    View view = (LinearLayout) getLayoutInflater().inflate(R.layout.main,
+            null);  
+    view = getLayoutInflater().inflate(R.layout.test, null);    
+    setContentView(view);  
+}  
+
+
+运行结果如下图所示:
+ 
+因为我没有指定ViewGroup root参数，所以，相当于直接加载了test视图文件，并返回。
+而它的高度充满了全屏而不是200dp，因为执行inflate的时候，没有root参数，则无法为test视图设定layoutparam参数。那么为什么会充满屏幕而不是没有显示呢？是因为我们将其设置视图到activity时，会取得当前window的layoutparam赋值给它，也就是充满全屏。有兴趣的话，你可以改一下test的layout_width设定一个数值，最后运行效果是一样的。
+第二种方式：inflate(view, root, false)
+@Override  
+protected void onCreate(Bundle savedInstanceState) {  
+    super.onCreate(savedInstanceState);  
+    View view = (LinearLayout) getLayoutInflater().inflate(R.layout.main,  
+            null);    
+    view = getLayoutInflater().inflate(R.layout.test, (ViewGroup) view, false); 
+    setContentView(view);  }  
+
+
+这里调用inflate的时候，强转了view为viewgroup，因为其本身就是linearlayout，所以这里可以强转。 
+运行的效果如下：
+ 
+单看效果而言，跟上面的一样。但从代码本身而言，实现的内容就不一样了。由于有了viewgroup，这里得到的视图其实已经有了layoutparam，你可以自行打印Log看看。
+但为什么最后的结果却是和上面的一样呢。原因还是由于设置视图到activity时，会取得当前window的layoutparam赋值给它，也就是充满全屏。
+第三种方式：inflate(view, root, true)
+
+    
+运行的效果如下：
+ 
+这个效果就很明显了，由于main是线性布局，所以，test视图被添加到了textview(hello world)下面，并且保留了其自己的layoutparam参数。
+
