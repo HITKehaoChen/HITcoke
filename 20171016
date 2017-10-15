@@ -1,0 +1,1 @@
+#include <stdio.h>int main(){  int i,k;  int list[100000];  int thissum,maxsum;  scanf("%d",&k);  thissum=maxsum=0;  for(i=0;i<k;i++){    scanf("%d",&list[i]);    thissum=thissum+list[i];    if(thissum>maxsum)       maxsum=thissum;    else if(thissum<0)       thissum=0;  }  printf("%d\n",maxsum);  return 0;}
